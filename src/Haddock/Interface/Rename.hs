@@ -230,6 +230,12 @@ renamePred (HsIParam (IPName name) t) = do
 renameLType :: LHsType Name -> RnM (LHsType DocName)
 renameLType = mapM renameType
 
+renameLKind :: LHsKind Name -> RnM (LHsKind DocName)
+renameLKind = renameLType
+
+renameMaybeLKind :: Maybe (LHsKind Name) -> RnM (Maybe (LHsKind DocName))
+renameMaybeLKind Nothing = return Nothing
+renameMaybeLKind (Just ki) = renameLKind ki >>= return . Just
 
 renameType :: HsType Name -> RnM (HsType DocName)
 renameType t = case t of
@@ -269,7 +275,8 @@ renameType t = case t of
 
   HsKindSig ty k -> do
     ty' <- renameLType ty
-    return (HsKindSig ty' k)
+    k' <- renameLKind k
+    return (HsKindSig ty' k')
 
   HsDocTy ty doc -> do
     ty' <- renameLType ty
@@ -282,7 +289,8 @@ renameType t = case t of
 renameLTyVarBndr :: LHsTyVarBndr Name -> RnM (LHsTyVarBndr DocName)
 renameLTyVarBndr (L loc tv) = do
   name' <- rename (hsTyVarName tv)
-  return $ L loc (replaceTyVarName tv name')
+  tyvar' <- replaceTyVarName tv name' renameLKind
+  return $ L loc tyvar'
 
 
 renameLContext :: Located [LHsPred Name] -> RnM (Located [LHsPred DocName])
@@ -330,19 +338,21 @@ renameTyClD d = case d of
     lname' <- renameL lname
     return (ForeignType lname' b)
 
-  TyFamily flav lname ltyvars kind -> do
+  TyFamily flav lname ltyvars kind tckind -> do
     lname'   <- renameL lname
     ltyvars' <- mapM renameLTyVarBndr ltyvars
-    return (TyFamily flav lname' ltyvars' kind)
+    kind'    <- renameMaybeLKind kind
+    return (TyFamily flav lname' ltyvars' kind' tckind)
 
   TyData x lcontext lname ltyvars typats k cons _ -> do
     lcontext' <- renameLContext lcontext
     lname'    <- renameL lname
     ltyvars'  <- mapM renameLTyVarBndr ltyvars
     typats'   <- mapM (mapM renameLType) typats
+    k'        <- renameMaybeLKind k
     cons'     <- mapM renameLCon cons
     -- I don't think we need the derivings, so we return Nothing
-    return (TyData x lcontext' lname' ltyvars' typats' k cons' Nothing)
+    return (TyData x lcontext' lname' ltyvars' typats' k' cons' Nothing)
 
   TySynonym lname ltyvars typats ltype -> do
     lname'   <- renameL lname

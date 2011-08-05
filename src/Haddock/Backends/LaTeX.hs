@@ -17,7 +17,7 @@ module Haddock.Backends.LaTeX (
 import Haddock.Types
 import Haddock.Utils
 import Haddock.GhcUtils
-import Pretty hiding (Doc)
+import Pretty hiding (Doc, quote)
 import qualified Pretty
 
 import GHC
@@ -25,7 +25,6 @@ import OccName
 import Name                 ( isTyConName, nameOccName )
 import RdrName              ( rdrNameOcc, isRdrTc )
 import BasicTypes           ( IPName(..), Boxity(..) )
-import Outputable           ( Outputable, ppr, showSDoc )
 import FastString           ( unpackFS, unpackLitString )
 
 import qualified Data.Map as Map
@@ -798,10 +797,6 @@ ppPred unicode (HsIParam (IPName n) t)
 -------------------------------------------------------------------------------
 
 
-ppKind :: Outputable a => a -> LaTeX
-ppKind k = text (showSDoc (ppr k))
-
-
 ppBang :: HsBang -> LaTeX
 ppBang HsNoBang = empty
 ppBang _        = char '!' -- Unpacked args is an implementation detail,
@@ -847,6 +842,12 @@ ppType       unicode ty = ppr_mono_ty pREC_TOP ty unicode
 ppParendType unicode ty = ppr_mono_ty pREC_CON ty unicode
 ppFunLhType  unicode ty = ppr_mono_ty pREC_FUN ty unicode
 
+ppLKind :: Bool -> LHsKind DocName -> LaTeX
+ppLKind unicode y = ppKind unicode (unLoc y)
+
+ppKind :: Bool -> HsKind DocName -> LaTeX
+ppKind unicode ki = ppr_mono_ty pREC_TOP ki unicode
+
 
 -- Drop top-level for-all type variables in user style
 -- since they are implicit in Haskell
@@ -873,9 +874,10 @@ ppr_mono_ty ctxt_prec (HsForAllTy expl tvs ctxt ty) unicode
 
 ppr_mono_ty _         (HsBangTy b ty)     u = ppBang b <> ppLParendType u ty
 ppr_mono_ty _         (HsTyVar name)      _ = ppDocName name
+ppr_mono_ty _         (HsPromotedConTy name) _ = Pretty.quote (ppDocName name)
 ppr_mono_ty ctxt_prec (HsFunTy ty1 ty2)   u = ppr_fun_ty ctxt_prec ty1 ty2 u
 ppr_mono_ty _         (HsTupleTy con tys) u = tupleParens con (map (ppLType u) tys)
-ppr_mono_ty _         (HsKindSig ty kind) u = parens (ppr_mono_lty pREC_TOP ty u <+> dcolon u <+> ppKind kind)
+ppr_mono_ty _         (HsKindSig ty kind) u = parens (ppr_mono_lty pREC_TOP ty u <+> dcolon u <+> ppLKind u kind)
 ppr_mono_ty _         (HsListTy ty)       u = brackets (ppr_mono_lty pREC_TOP ty u)
 ppr_mono_ty _         (HsPArrTy ty)       u = pabrackets (ppr_mono_lty pREC_TOP ty u)
 ppr_mono_ty _         (HsPredTy p)        u = parens (ppPred u p)

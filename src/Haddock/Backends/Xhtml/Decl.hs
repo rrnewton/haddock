@@ -35,7 +35,6 @@ import           Text.XHtml hiding     ( name, title, p, quote )
 import BasicTypes            ( IPName(..), Boxity(..) )
 import GHC
 import Name
-import Outputable            ( ppr, showSDoc, Outputable )
 
 
 -- TODO: use DeclInfo DocName or something
@@ -150,8 +149,8 @@ ppTyName name
 --------------------------------------------------------------------------------
 
 
-ppTyFamHeader :: Bool -> Bool -> TyClDecl DocName -> Bool -> Html
-ppTyFamHeader summary associated decl unicode =
+ppTyFamHeader :: Bool -> Bool -> TyClDecl DocName -> Bool -> Qualification -> Html
+ppTyFamHeader summary associated decl unicode qual =
 
   (case tcdFlavour decl of
      TypeFamily
@@ -165,7 +164,7 @@ ppTyFamHeader summary associated decl unicode =
   ppTyClBinderWithVars summary decl <+>
 
   case tcdKind decl of
-    Just kind -> dcolon unicode  <+> ppKind kind
+    Just kind -> dcolon unicode  <+> ppLKind unicode qual kind
     Nothing -> noHtml
 
 
@@ -173,13 +172,13 @@ ppTyFam :: Bool -> Bool -> LinksInfo -> SrcSpan -> Maybe (Doc DocName) ->
               TyClDecl DocName -> Bool -> Qualification -> Html
 ppTyFam summary associated links loc mbDoc decl unicode qual
 
-  | summary   = ppTyFamHeader True associated decl unicode
+  | summary   = ppTyFamHeader True associated decl unicode qual
   | otherwise = header_ +++ maybeDocSection qual mbDoc +++ instancesBit
 
   where
     docname = tcdName decl
 
-    header_ = topDeclElem links loc [docname] (ppTyFamHeader summary associated decl unicode)
+    header_ = topDeclElem links loc [docname] (ppTyFamHeader summary associated decl unicode qual)
 
     instancesBit = ppInstances instances docname unicode qual
 
@@ -643,10 +642,6 @@ ppDataHeader summary decl unicode qual
 --------------------------------------------------------------------------------
 
 
-ppKind :: Outputable a => a -> Html
-ppKind k = toHtml $ showSDoc (ppr k)
-
-
 ppBang :: HsBang -> Html
 ppBang HsNoBang = noHtml
 ppBang _        = toHtml "!" -- Unpacked args is an implementation detail,
@@ -692,6 +687,11 @@ ppType       unicode qual ty = ppr_mono_ty pREC_TOP ty unicode qual
 ppParendType unicode qual ty = ppr_mono_ty pREC_CON ty unicode qual
 ppFunLhType  unicode qual ty = ppr_mono_ty pREC_FUN ty unicode qual
 
+ppLKind :: Bool -> Qualification-> LHsKind DocName -> Html
+ppLKind unicode qual y = ppKind unicode qual (unLoc y)
+
+ppKind :: Bool -> Qualification-> HsKind DocName -> Html
+ppKind unicode qual ki = ppr_mono_ty pREC_TOP ki unicode qual
 
 -- Drop top-level for-all type variables in user style
 -- since they are implicit in Haskell
@@ -718,10 +718,11 @@ ppr_mono_ty ctxt_prec (HsForAllTy expl tvs ctxt ty) unicode qual
 
 ppr_mono_ty _         (HsBangTy b ty)     u q = ppBang b +++ ppLParendType u q ty
 ppr_mono_ty _         (HsTyVar name)      _ q = ppDocName q name
+ppr_mono_ty _         (HsPromotedConTy name) _ q = quote (ppDocName q name)
 ppr_mono_ty ctxt_prec (HsFunTy ty1 ty2)   u q = ppr_fun_ty ctxt_prec ty1 ty2 u q
 ppr_mono_ty _         (HsTupleTy con tys) u q = tupleParens con (map (ppLType u q) tys)
 ppr_mono_ty _         (HsKindSig ty kind) u q =
-    parens (ppr_mono_lty pREC_TOP ty u q <+> dcolon u <+> ppKind kind)
+    parens (ppr_mono_lty pREC_TOP ty u q <+> dcolon u <+> ppLKind u q kind)
 ppr_mono_ty _         (HsListTy ty)       u q = brackets (ppr_mono_lty pREC_TOP ty u q)
 ppr_mono_ty _         (HsPArrTy ty)       u q = pabrackets (ppr_mono_lty pREC_TOP ty u q)
 ppr_mono_ty _         (HsPredTy p)        u q = parens (ppPred u q p)
