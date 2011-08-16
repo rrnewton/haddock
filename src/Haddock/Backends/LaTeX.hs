@@ -17,7 +17,7 @@ module Haddock.Backends.LaTeX (
 import Haddock.Types
 import Haddock.Utils
 import Haddock.GhcUtils
-import Pretty hiding (Doc, quote)
+import Pretty hiding (Doc)
 import qualified Pretty
 
 import GHC
@@ -874,7 +874,6 @@ ppr_mono_ty ctxt_prec (HsForAllTy expl tvs ctxt ty) unicode
 
 ppr_mono_ty _         (HsBangTy b ty)     u = ppBang b <> ppLParendType u ty
 ppr_mono_ty _         (HsTyVar name)      _ = ppDocName name
-ppr_mono_ty _         (HsPromotedConTy name) _ = Pretty.quote (ppDocName name)
 ppr_mono_ty ctxt_prec (HsFunTy ty1 ty2)   u = ppr_fun_ty ctxt_prec ty1 ty2 u
 ppr_mono_ty _         (HsTupleTy con tys) u = tupleParens con (map (ppLType u) tys)
 ppr_mono_ty _         (HsKindSig ty kind) u = parens (ppr_mono_lty pREC_TOP ty u <+> dcolon u <+> ppLKind u kind)

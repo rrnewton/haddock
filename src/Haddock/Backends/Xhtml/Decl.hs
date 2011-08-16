@@ -718,7 +718,6 @@ ppr_mono_ty ctxt_prec (HsForAllTy expl tvs ctxt ty) unicode qual
 
 ppr_mono_ty _         (HsBangTy b ty)     u q = ppBang b +++ ppLParendType u q ty
 ppr_mono_ty _         (HsTyVar name)      _ q = ppDocName q name
-ppr_mono_ty _         (HsPromotedConTy name) _ q = quote (ppDocName q name)
 ppr_mono_ty ctxt_prec (HsFunTy ty1 ty2)   u q = ppr_fun_ty ctxt_prec ty1 ty2 u q
 ppr_mono_ty _         (HsTupleTy con tys) u q = tupleParens con (map (ppLType u q) tys)
 ppr_mono_ty _         (HsKindSig ty kind) u q =
