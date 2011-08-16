@@ -17,7 +17,7 @@ module Haddock.Backends.LaTeX (
 import Haddock.Types
 import Haddock.Utils
 import Haddock.GhcUtils
-import Pretty hiding (Doc)
+import Pretty hiding (Doc, quote)
 import qualified Pretty
 
 import GHC
