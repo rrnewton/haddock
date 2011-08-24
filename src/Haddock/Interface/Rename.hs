@@ -263,11 +263,11 @@ renameType t = case t of
 
   HsTupleTy b ts -> return . HsTupleTy b =<< mapM renameLType ts
 
-  HsOpTy a (L loc op) b -> do
+  HsOpTy a (w, (L loc op)) b -> do
     op' <- rename op
     a'  <- renameLType a
     b'  <- renameLType b
-    return (HsOpTy a' (L loc op') b')
+    return (HsOpTy a' (w, (L loc op')) b')
 
   HsParTy ty -> return . HsParTy =<< renameLType ty
 
