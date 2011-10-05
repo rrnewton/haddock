@@ -319,11 +319,14 @@ renameTyClD d = case d of
     lname' <- renameL lname
     return (ForeignType lname' b)
 
-  TyFamily flav lname ltyvars kind tckind -> do
+--  TyFamily flav lname ltyvars kind tckind -> do
+  TyFamily flav lname ltyvars tckind -> do
     lname'   <- renameL lname
     ltyvars' <- mapM renameLTyVarBndr ltyvars
-    kind'    <- renameMaybeLKind kind
-    return (TyFamily flav lname' ltyvars' kind' tckind)
+--    kind'    <- renameMaybeLKind kind
+    tckind'    <- renameMaybeLKind tckind
+--    return (TyFamily flav lname' ltyvars' kind' tckind)
+    return (TyFamily flav lname' ltyvars' tckind')
 
   TyData x lcontext lname ltyvars typats k cons _ -> do
     lcontext' <- renameLContext lcontext

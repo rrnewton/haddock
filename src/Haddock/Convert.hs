@@ -119,14 +119,14 @@ synifyTyCon tc
       case synTyConRhs tc of
         SynFamilyTyCon ->
           TyFamily TypeFamily (synifyName tc) (synifyTyVars (tyConTyVars tc))
-               (Just (synifyKind (synTyConResKind tc))) placeHolderKind
+               (Just (synifyKind (synTyConResKind tc))) -- placeHolderKind
         _ -> error "synifyTyCon: impossible open type synonym?"
   | isDataFamilyTyCon tc = --(why no "isOpenAlgTyCon"?)
       case algTyConRhs tc of
         DataFamilyTyCon ->
           TyFamily DataFamily (synifyName tc) (synifyTyVars (tyConTyVars tc))
                Nothing --always kind '*'
-               placeHolderKind
+               -- placeHolderKind
         _ -> error "synifyTyCon: impossible open data type?"
   | otherwise =
   -- (closed) type, newtype, and data
